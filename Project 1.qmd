@@ -1,0 +1,106 @@
+---
+title: "Project 1"
+format: pdf
+editor: visual
+---
+
+## The NCAA Gymnastics Dataset
+
+The ncaa_gymnastics.csv dataset provides a record of team performances at the **NCAA Women’s Gymnastics Championships** from 2008 to 2024 (excluding 2020). It was put together using stats from the [USA Gymnastics Results Website](https://usagym.org/results/2024/) and covers the top 4 college teams that made it to the semi-finals and finals each year. Each single row in the spreadsheet represents one specific school’s performance for that year, including their individual team scores for Vault, Bars, Beam, and Floor, plus their overall rank and total score.
+
+```{r}
+#| include: false
+library(tidyverse)
+gymnastics <- read.csv('ncaa_gymnastics.csv')
+```
+
+## Plot 1: Championship Appearances
+
+```{r}
+#| echo: false
+
+gymnastics |> 
+  ggplot(aes(x = Team, fill = factor(Rank))) + 
+  geom_bar(position = 'stack') + 
+  labs(
+    title = 'Total Championship Appearances by Team',
+    subtitle = '2008-2024 (excluding 2020)',
+    y = 'Total Championship Appearances',
+    fill = 'Rank'
+  ) + 
+  coord_flip()
+```
+
+This plot displays the total number of NCAA Championship appearances by team from 2008 to 2024 (excluding 2020), with each bar broken down by finishing rank. The total length of each bar represents overall championship appearances, while the different colored sections show how often they ranked 1st, 2nd, 3rd, or 4th.
+
+One clear pattern is that teams such as those from Oklahoma and Florida stand out with longer bars and more top-place finishes, showing they not only qualify often but also perform well once they reach the championships. In contrast, teams with shorter bars appear less frequently and tend to have fewer high finishes. Overall, the pattern suggests that a small group of programs has consistently dominated the championships during this time period.
+
+## Plot 2: Impact of Event Scores on Total Points
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 5.8
+#| fig-width: 10
+
+library(patchwork)
+vault_r = cor(gymnastics$Vault, gymnastics$Total)
+bar_r = cor(gymnastics$Bar, gymnastics$Total)
+beam_r = cor(gymnastics$Beam, gymnastics$Total)
+floor_r = cor(gymnastics$Floor, gymnastics$Total)
+
+vault <- ggplot(
+    data = gymnastics,
+    aes(x = Vault, y = Total)) + 
+  geom_point(color = 'pink2') + 
+  geom_smooth(method = 'lm', se = F, color = 'pink4') + 
+  labs(
+    title = 'Vault vs Total Points',
+    subtitle = paste('r stat:', round(vault_r, 3)),
+    x = 'Vault Points',
+    y = 'Total Points'
+  )
+
+bar <- ggplot(
+    data = gymnastics,
+    aes(x = Bar, y = Total)) + 
+  geom_point(color = 'lightblue') + 
+  geom_smooth(method = 'lm', se = F, color = 'lightblue4') + 
+  labs(
+    title = 'Bar vs Total Points',
+    subtitle = paste('r stat:', round(bar_r, 3)),
+    x = 'Bar Points',
+    y = 'Total Points'
+  )
+
+beam <- ggplot(
+    data = gymnastics,
+    aes(x = Beam, y = Total)) + 
+  geom_point(color = 'purple1') + 
+  geom_smooth(method = 'lm', se = F, color = 'purple4') + 
+  labs(
+    title = 'Beam vs Total Points',
+    subtitle = paste('r stat:', round(beam_r, 3)),
+    x = 'Beam Points',
+    y = 'Total Points'
+  )
+
+floor <- ggplot(
+    data = gymnastics,
+    aes(x = Floor, y = Total)) + 
+  geom_point(color = 'gold2') + 
+  geom_smooth(method = 'lm', se = F, color = 'gold4') + 
+  labs(
+    title = 'Floor vs Total Points',
+    subtitle = paste('r stat:', round(floor_r, 3)),
+    x = 'Floor Points',
+    y = 'Total Points'
+  )
+
+vault + bar + beam + floor
+```
+
+These four scatterplots show how each event score (Vault, Bars, Beam, and Floor) relates to a team’s Total score at the NCAA Championships. Each plot includes a regression line and the correlation coefficient (r). All four have strong positive correlations, with upward-sloping lines showing that higher event scores are linked to higher overall scores.
+
+One interesting feature is that some events have slightly higher r-values, meaning that certain events might have a slightly stronger connection to overall team success. In addition, most of the points are packed pretty closely together near the higher end of the scoring scale, which makes sense since the data only includes the top four teams each year, where small differences can significantly impact total scores.
