@@ -1,0 +1,193 @@
+---
+title: "HW 8"
+format: pdf
+editor: visual
+---
+
+## HW 8
+
+### Question 1
+
+The datasets `table1` and `table2` come from the tidyverse and contain tuberculosis (TB) case data reported by the World Health Organization for several countries across multiple years. The variables involved are:
+
+-   `country`
+-   `year`
+-   `cases`
+-   `population`
+
+```{r}
+#| include: false
+library(tidyverse)
+```
+
+Briefly explain why `table2` is not tidy. Then write code to convert `table2` into a tidy dataset that looks like `table1`.
+
+`table2` isn’t tidy because the values `cases` and `population` are stored in the `type` column instead of being their own columns. This means information for the same country and year is split across multiple rows. In a tidy dataset, each variable should have its own column, so cases and population should be separate columns instead of values in one column.
+
+```{r}
+table2 |> 
+  pivot_wider(
+    names_from = 'type',
+    values_from = 'count'
+  )
+```
+
+### Question 2
+
+Compute the average rate of TB cases per 10,000 people for each country. Show your code.
+
+```{r}
+table1 |> 
+  group_by(country) |> 
+  summarize(avg_case_rate = mean(10000*cases/population))
+
+```
+
+### Question 3
+
+The `billboard` dataset (available in the tidyverse) contains weekly Billboard Top 100 rankings for songs in the year 2000. Each row represents a song, and the columns `wk1, wk2, …, wk76` represent the song’s rank in that particular week.
+
+1\. Explain briefly why this dataset is not tidy.
+
+The dataset is not tidy because the week numbers are stored as column names instead of values in a variable. This means information about rankings over time is spread across many columns (like wk1, wk2, etc.) instead of being stored in a single week variable. In a tidy dataset, each variable should have its own column, so the week values and the corresponding ranks should be organized into two columns rather than many separate week columns.
+
+2\. Reshape the dataset so that:
+
+-   Each row represents one `track–week` combination
+
+-   There is a numeric variable called `week`
+
+-   There is a variable called `rank`
+
+-   Missing ranks are removed
+
+```{r}
+tidy_billboard <- billboard |> 
+  pivot_longer(cols = starts_with('wk'),
+               names_to = 'Week',
+               values_to = 'Rank',
+               names_prefix = 'wk',
+               names_transform = list(Week = as.integer)) |> 
+  drop_na()
+tidy_billboard
+```
+
+### Question 4
+
+Using your reshaped billboard dataset, write code to:
+
+1\. For each track, determine:
+
+-   The best rank the song achieved
+-   The week in which its best rank occurred
+
+```{r}
+billboard_best_rank <- tidy_billboard |> 
+  group_by(track) |> 
+  summarize(best_rank = min(Rank),
+            week_of_best_rank = Week[which.min(Rank)])
+billboard_best_rank
+```
+
+2\. Create a scatterplot with:
+
+-   x-axis = best rank
+-   y-axis = week of best rank
+
+```{r}
+billboard_best_rank |> 
+  ggplot(aes(x = best_rank, y = week_of_best_rank)) +
+  geom_point()
+```
+
+3\. Briefly describe any visible pattern. Is there a relationship between how high a song peaks and when it peaks?
+
+From the scatterplot, it looks like songs that peak in later weeks tend to reach higher rankings, while songs that peak earlier usually do not reach as high on the chart. This suggests that songs that stay on the chart longer may gain popularity over time and eventually reach higher positions.
+
+### Question 5
+
+In the experiment below, two tennis players each aimed serves at four different targets on the court:
+
+-   `deuce_wide`
+-   `deuce_t`
+-   `ad_t`
+-   `ad_wide`
+
+For each serve, the number recorded is the distance (in inches) between the actual bounce location and the intended target. Smaller numbers indicate greater accuracy.
+
+Each row below represents four serves from a player — one to each target.
+
+`player deuce_wide deuce_t ad_t ad_wide`
+
+`1 25 38 15 33`
+
+`1 24 45 28 7`
+
+`1 30 11 19 20`
+
+`2 14 8 30 23`
+
+`2 26 0 16 1`
+
+`2 23 13 27 23`
+
+1\. Read this dataset into R.
+
+```{r}
+#| message: false
+#| warning: false
+tennis <- read_csv(
+  "player,deuce_wide,deuce_t,ad_t,ad_wide
+  1,25,38,15,33
+  1,24,45,28,7
+  1,30,11,19,20
+  2,14,8,30,23
+  2,26,0,16,1
+  2,23,13,27,23"
+)
+```
+
+2\. Reshape the data into tidy long format with variables:
+
+-   `player`
+-   `target`
+-   `error`
+
+```{r}
+tidy_tennis <- tennis |> 
+  pivot_longer(
+    cols = deuce_wide:ad_wide,
+    names_to = 'target',
+    values_to = 'error'
+  )
+tidy_tennis
+```
+
+### Question 6
+
+Using your tidy tennis dataset:
+
+1\. Compute the mean of `error` for each `player–target` combination.
+
+```{r}
+#| message: false
+#| warning: false
+tidy_tennis |> 
+  group_by(player, target) |> 
+  summarize(mean_error = mean(error))
+```
+
+2\. Create a plot that compares error distributions across the four targets (color or facet by player).
+
+```{r}
+tidy_tennis |> 
+  ggplot(aes(x = target, y = error, fill = factor(player))) + 
+  geom_boxplot() + 
+  facet_wrap(~player) +
+  labs(
+    title = "Tennis Serve Error Distribution by Target",
+    x = "Target Location",
+    y = "Error (inches)",
+    fill = "Player"
+  )
+```

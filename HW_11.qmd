@@ -1,0 +1,110 @@
+---
+title: "Homework 11"
+author: "Lily Walker"
+format: pdf
+editor: visual
+---
+
+```{r message=FALSE}
+#| warning: false
+library(tidyverse)
+library(babynames)
+library(stringr)
+```
+
+**1.** Using the `words` dataset, calculate the proportion of words that:
+
+a.  Start with "y" (case-insensitive)
+b.  End with "x"
+c.  Are exactly 3 letters long
+d.  Are 7 or more letters long
+
+```{r}
+mean(str_detect(words, '^[yY]')) 
+
+mean(str_detect(words, 'x$'))
+
+mean(str_length(words) == 3)
+
+mean(str_length(words) >= 7)
+```
+
+**2.** Using the `sentences` dataset, create a matrix where each row is a sentence and each column is a letter of the alphabet, with each cell containing the count of that letter in that sentence (case-insensitive). So, for example, the first row of this matrix should have 26 columns, with the first entry as the number of "a"s in the first sentence. The second entry being the number of "b"s in the first sentence, and so forth.
+
+```{r}
+
+letters_vec <- letters
+
+letter_matrix <- sapply(letters_vec, function(letter){
+  str_count(str_to_lower(sentences), letter)
+})
+
+letter_matrix <- as.matrix(letter_matrix)
+colnames(letter_matrix) <- letters_vec
+
+head(letter_matrix)
+```
+
+**3.** Using the matrix from question 2, create a bar chart showing the average count of each letter across all sentences.
+
+```{r}
+
+letter_means <- data.frame(
+  letter = letters,
+  mean = colMeans(letter_matrix)
+)
+
+letter_means |> 
+  ggplot(aes(x = letter, y = mean)) +
+  geom_col()
+```
+
+**4.** Using `babynames`, calculate the proportion of babies each year (by sex) whose name starts with each letter of the alphabet. Plot how these proportions change over time, with separate panels for each letter and lines colored by sex.
+
+```{r}
+#| message: false
+#| warning: false
+
+first_letters <- babynames |> 
+  mutate(first_letter = tolower(substr(name, 1, 1))) |> 
+  group_by(year, sex, first_letter) |> 
+  summarize(total_prop = sum(prop))
+
+first_letters |> 
+  ggplot(aes(x = year, y = total_prop, color = sex)) +
+  geom_line() +
+  facet_wrap(~ first_letter)
+```
+
+**5.** Using `babynames`, for each decade, find the most gender-neutral name — defined as the name whose usage is closest to a 50/50 male/female split. Restrict to names given to at least 5,000 boys and 5,000 girls in that decade. Display the results.
+
+```{r}
+gender_neutral_names <- babynames |> 
+  mutate(decade = (year %/% 10) * 10) |> 
+  summarize(
+    boys = sum(n[sex == "M"]),
+    girls = sum(n[sex == "F"]),
+    .by = c(decade, name)
+  ) |>
+  filter(boys >= 5000, girls >= 5000) |>  
+  mutate(total = boys + girls, 
+         diff = abs(boys - girls) / total) |>
+  slice_min(diff, n = 1, by = decade) |>
+  arrange(decade)
+
+gender_neutral_names
+```
+
+**6.** Using `babynames`, find your own name and plot how its popularity has changed over time in the United States. If your name is not among those in the dataset, choose another name of your choice to explore how its popularity has changed over time.
+
+```{r}
+
+babynames |> 
+  filter(name == 'Lily', sex == 'F') |> 
+  ggplot(aes(x = year, y = prop)) +
+  geom_line() + 
+  labs(
+    title = 'Popularity of the name "Lily" over time'
+  )
+
+```

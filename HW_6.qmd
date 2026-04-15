@@ -1,0 +1,106 @@
+---
+title: "HW 6"
+format: pdf
+editor: visual
+---
+
+## 1. Import and Combine the Data
+
+Read in all sheets from the Excel file.
+
+```{r}
+#| message: false
+library(tidyverse)
+library(readxl)
+
+lake1 <- read_excel('Lake_Powell_bySpecies.xlsx', sheet = 1)
+lake2 <- read_excel('Lake_Powell_bySpecies.xlsx', sheet = 2)
+lake3 <- read_excel('Lake_Powell_bySpecies.xlsx', sheet = 3)
+lake4 <- read_excel('Lake_Powell_bySpecies.xlsx', sheet = 4)
+lake5 <- read_excel('Lake_Powell_bySpecies.xlsx', sheet = 5)
+lake6 <- read_excel('Lake_Powell_bySpecies.xlsx', sheet = 6)
+
+```
+
+Combine them into one data frame using the function `bind_rows()` from the tidyverse.
+
+```{r}
+
+og_lake_powell <- bind_rows(lake1, lake2, lake3, lake4, lake5, lake6)
+
+```
+
+## 2. Explore the Length (TL) vs. Weight (WT) Relationship
+
+Filter out observations that would obscure your analysis. Fox example, one species name is slightly miscoded in the dataset. Identify it and remove it from your analysis. Explain what you removed and why.
+
+```{r}
+
+lake_powell <- og_lake_powell |> 
+  filter(Species == 'YBH' |
+         Species == 'TFS' |
+         Species == 'CRP' | 
+         Species == 'CCF' |
+         Species == 'GZD' |
+         Species == 'BLC')
+
+```
+
+I removed the following row because the species name was wrong (TFS\` instead of TFS):
+
+```{r}
+#| echo: false
+#| message: false
+og_lake_powell |> 
+  filter(Species != 'YBH' &
+         Species != 'TFS' &
+         Species != 'CRP' & 
+         Species != 'CCF' &
+         Species != 'GZD' &
+         Species != 'BLC')
+```
+
+Create a visualization that examines the relationship between total length (TL) and weight (WT) across species.
+
+```{r}
+
+lake_powell |> 
+  filter(WT != 0) |> 
+  ggplot(aes(x = TL, y = WT)) + 
+  geom_point() + 
+  facet_wrap(~Species, scales = 'free') + 
+  labs(
+    title = "Total Length vs Total Weight",
+    x = 'Total Length',
+    y = 'Total Weight'
+  )
+
+```
+
+Describe what you observe:
+
+This plot shows a clear positive relationship between total length and total weight for all six species—longer fish generally weigh more. The pattern looks slightly curved, since weight increases faster at larger lengths. Some species, like CCF and CRP, reach much bigger sizes than others, while TFS stays in a much smaller range. There’s also more spread in some species, like GZD, where fish of similar lengths can have pretty different weights. Overall, the trend is consistent, but the size ranges and variability differ across species.
+
+## 3. Explore Species Composition Over Time
+
+Visualize how the fish species composition changes over time (i.e., the proportion of each type of fish in the lake). (Hint: A bar plot using `geom_bar()` with the position = “fill” option will be helpful.)
+
+```{r}
+
+lake_powell |> 
+  ggplot(aes(x = Year, fill = Species)) + 
+  geom_bar(position = 'fill') + 
+  labs(
+    title = "Fish Species Composition Over Time",
+    x = "Year",
+    y = "Proportion of Fish",
+    fill = "Species"
+  )
+
+```
+
+Summarize any patterns or trends you see:
+
+This graph shows that the fish species composition changes a lot over time. In the earlier years (around the 1980s), Black crappie (BLC) and CCF make up a much larger proportion of the lake. As time goes on, their proportions decrease, and other species start to take over.
+
+By the 2000s and 2010s, Gizzard Shad (GZD) becomes much more dominant and makes up the largest share of the fish population in many years. Some species, like YBH, stay at pretty low proportions the whole time. Overall, the lake shifts from being dominated by a few species early on to a different mix later, with GZD becoming especially common in more recent years.

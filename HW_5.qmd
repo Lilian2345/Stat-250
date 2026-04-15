@@ -1,0 +1,53 @@
+---
+title: "Homework 5: Simpson's Paradox in Basketball"
+format:
+  pdf:
+    self-contained: true
+editor: source
+---
+
+## Instructions
+
+The file `james_dat.rds` in the Data folder on canvas contains a summarized dataset of LeBron James’ shot attempts during the 2015-16 NBA season. Each row represents a collection of his shots as follows:
+
+-   `ndd_bin`: a binned measure of nearest defender distance
+-   `location`: shot type (e.g., dunk, paint, long 2, three)
+-   `fg_percent`: proportion of shots made in that group
+-   `shots`: number of shots in that group
+
+The rows where `location = "aggregate"` represent the overall field goal percentage at each defender distance, combining all shot types. On aggregate, defender distance does not appear to have a strong effect on James’ field goal percentage. However, when conditioning on shot location, a different pattern emerges.
+
+Your task in this homework is to use plotting to help illustrate this apparent contradiction, which is an example of [Simpson's Paradox](https://en.wikipedia.org/wiki/Simpson%27s_paradox). To receive full credit:
+
+1.  You must do the assignment in Quarto.
+2.  Your plot must have **faceting**.
+3.  You must include **linear smoothing lines** (`geom_smooth(method = "lm")`).
+4.  Your plot must be clearly labeled (title, axis labels, legends as needed).
+5.  You must include a short paragraph explaining what is happening and why the aggregate relationship differs from the within-location relationships.
+
+Submit both your `.qmd` file and your rendered file (either `.html` or `.pdf`).
+
+```{r}
+# Uncomment the line below and change the path accordingly to read in the data 
+# after downloading from canvas.
+james_dat <- readRDS("james_dat.rds")
+
+library(tidyverse)
+
+ggplot(
+  data = james_dat,
+  mapping = aes(x = as.numeric(ndd_bin), y = fg_percent)
+) +
+  geom_point() + 
+  geom_smooth(method = 'lm', se = F) +
+  facet_wrap(~location) + 
+  labs(
+    title = "LeBron James 2015–16 Field Goal Percentage vs. Defender Distance",
+    subtitle = "Faceted by shot type",
+    x = "Nearest Defender Distance (Binned)",
+    y = "Field Goal Percentage"
+  )
+
+```
+
+This plot demonstrates Simpson's Paradox because in the aggregate data, defender distance appears to have little effect on field goal percentage. However, for each shot type, field goal percentage generally increases as defender distance increases. The aggregate relationship differs because shot location acts as a confounding variable, so you can't clearly see the trends when all shot types are combined.

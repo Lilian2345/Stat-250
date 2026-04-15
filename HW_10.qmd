@@ -1,0 +1,93 @@
+---
+title: "HW 10"
+author: "Lily Walker"
+format: pdf
+editor: visual
+---
+
+```{r}
+#| message: false
+#| warning: false
+library(tidyverse)
+library(rvest)
+```
+
+## Question 1
+
+Provide R code to create a data frame containing the data from the States by Size in Square Miles table from the following URL: https://statesymbolsusa.org/symbol-official-item/national-us/uncategorized/states-size Make sure to properly read in the column names in R. Also, omit the unnecessary index column in the state size data set. Plot a histogram of the state sizes.
+
+```{r}
+#| message: false
+#| warning: false
+url1 <- 'https://statesymbolsusa.org/symbol-official-item/national-us/uncategorized/states-size'
+
+states <- read_html(url1) |> 
+  html_element('table') |> 
+  html_table(header = T) |> 
+  setNames(c('x', 'state', 'square_miles')) |> 
+  select(state, square_miles)
+
+states
+```
+
+## Question 2
+
+Find a website that contains a “table” html element. Get the URL and scrape the table into a dataframe using the methods we covered in class. Make a well-labeled graphic based on the data.
+
+```{r}
+url2 <- 'https://cotap.org/per-capita-carbon-co2-emissions-by-country/?gad_source=1&gad_campaignid=15416182513&gbraid=0AAAAADyLLdeJKbU3OAvndOx5THL3tU_ty&gclid=Cj0KCQjwp7jOBhDGARIsABe7C4eNFMW0j86sKV6qYsMvpJwbCzBJHt0SeIy2ryjPratPNd_7U265U9AaAosqEALw_wcB'
+
+co2 <- read_html(url2) |> 
+  html_element('table') |> 
+  html_table() |> 
+  setNames(c('country', 'co2_per_cap')) |> 
+  mutate(co2_per_cap = as.numeric(co2_per_cap))
+
+english_countries <- c('United States', 'Australia', 'United Kingdom', 'Canada', 'Ireland', 'New Zealand')
+
+co2 |> 
+  filter(country %in% english_countries) |> 
+  ggplot(aes(x = country, y = co2_per_cap, fill = country)) +
+  geom_col(show.legend = F) +
+  geom_hline(
+    yintercept = mean(co2$co2_per_cap, na.rm = TRUE),
+    color = "red",
+    linewidth = 1.5
+    ) +
+  labs(
+    title = 'CO2 Emissions Per Capita',
+    subtitle = 'Among native english speaking countries',
+    x = 'Country',
+    y = 'Per Capita Carbon Emissions(tons)',
+    caption = '* red line = world average'
+  )
+```
+
+## Question 3
+
+The following website contains a table with information about the spiciness of peppers: https: //trueleafmarket.com/pages/scoville-heat-scale?srsltid=AfmBOoot8CjsXlDYBFF6aAwbqC AaHg5qEPpsbdOn9U8wzZIwwiL0MxZ9 Create the following plot using these data
+
+```{r fig.width=8, fig.height=8}
+url3 <- 'https://trueleafmarket.com/pages/scoville-heat-scale?srsltid=AfmBOoot8CjsXlDYBFF6aAwbqCAaHg5qEPpsbdOn9U8wzZIwwiL0MxZ9'
+
+peppers <- read_html(url3) |> 
+  html_element('table') |> 
+  html_table() |> 
+  janitor::clean_names() |> 
+  mutate(min_SHU = parse_number(average_scoville_heat_units))
+
+category_inds <- which(str_sub(peppers$average_scoville_heat_units, 1, 1) != "≈")
+categories <- peppers$pepper_variety[category_inds]
+
+peppers_clean <- peppers[-category_inds,] |> 
+  mutate(Category = rep(categories, 
+                        diff(c(category_inds, nrow(peppers) + 1)) - 1))
+
+peppers_clean |> 
+  filter(Category %in% c('Very Hot', 'Hottest Peppers on Earth', 
+                         'Even Spicier Chemicals')) |> 
+  ggplot(aes(y = fct_reorder(pepper_variety, min_SHU), x = min_SHU)) +
+  geom_col(aes(fill = Category)) +
+  labs(x = "Minimum Scoville Heat Units",
+       y = "Pepper Variety") 
+```

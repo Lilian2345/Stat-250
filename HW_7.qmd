@@ -1,0 +1,156 @@
+---
+title: "HW 7"
+format: pdf
+editor: visual
+---
+
+## Question 1
+
+Using the flights dataset from the package nycflights13, provide code to find:
+
+```{r}
+#| include: false
+library(nycflights13)
+library(tidyverse)
+```
+
+1\. All flights that had an arrival delay of two or more hours
+
+```{r}
+flights |> 
+  filter(arr_delay >= 120)
+```
+
+2\. All flights that flew to Houston (IAH or HOU)
+
+```{r}
+flights |> 
+  filter(dest == 'IAH' | dest == 'HOU')
+```
+
+3\. All flights that departed in summer (July, August, and September)
+
+```{r}
+flights |> 
+  filter(month == '7' | month == '8' | month == '9')
+```
+
+4\. All flights that departed between midnight and 6am (inclusive)
+
+```{r}
+flights |> 
+  filter(dep_time >= 0 & dep_time <= 600)
+```
+
+5\. All flights that arrived more than two hours late, but didn’t leave late
+
+```{r}
+flights |> 
+  filter(arr_delay > 120 & dep_delay < 0)
+```
+
+6\. All flights that were delayed on the departure but made up some time in flight, so that their arrival delay wasn’t as bad
+
+```{r}
+flights |> 
+  filter(dep_delay > 0 & arr_delay < dep_delay)
+```
+
+## Question 2:
+
+Write two different ways to use select() to extract the variables dep_time, sched_dep_time, and dep_delay from flights.
+
+```{r}
+flights |> 
+  select(dep_time:dep_delay)
+
+flights |> 
+  select(contains('dep'))
+```
+
+## Question 3:
+
+Write code to add the variable arrival, where arrival is a categorical variable that is equal to "ontime" when arr_delay \<= 0 and "delayed" when arr_delay \> 0.
+
+```{r}
+flights |> 
+  mutate(arrival = if_else(arr_delay <= 0, 'ontime', 'delayed'))
+```
+
+## Question 4:
+
+Currently dep_time and sched_dep_time are convenient to look at, but hard to compute with because they’re not really continuous numbers. Use them to create a new variable for number of minutes since midnight. (Hint: use modular division)
+
+```{r}
+flights |> 
+  mutate(dep_time = (dep_time %/% 100) * 60 + dep_time %% 100,
+         sched_dep_time = (dep_time %/% 100) * 60 + dep_time %% 100)
+```
+
+## Question 5:
+
+Provide code to sort flights jointly by airline (carrier) and by longest to shortest departure delay within airline.
+
+```{r}
+flights |> 
+  arrange(carrier, desc(dep_delay))
+```
+
+## Question 6:
+
+Provide code to create a dataframe named avg_delay that has variables for each airline’s average departure delay and average arrival delay.
+
+```{r}
+avg_delay <- flights |> 
+  summarize(avg_dep_delay = mean(dep_delay, na.rm = T),
+            avg_arr_delay = mean(arr_delay, na.rm = T),
+            .by = carrier)
+```
+
+## Question 7:
+
+Create a scatterplot of average speed on the y axis (in miles per hour) by distance traveled on the x axis for all of United Airlines flights, and add a smooth trend to the plot.
+
+```{r}
+flights |> 
+  filter(carrier == 'UA') |> 
+  ggplot(aes(x = distance, y = (distance/(air_time/60)))) +
+  geom_point() + 
+  geom_smooth() + 
+  labs(
+    title = 'Avg Speed vs Distance Traveled',
+    x = 'Distance traveled (miles)',
+    y = 'Avg Speed (miles per hour)'
+  )
+```
+
+Describe the relationship. Why do you think it looks the way it does?
+
+The scatterplot shows a positive, nonlinear relationship between distance traveled and average speed. As the distance of a flight increases, the average speed generally increases as well, but the increase slows and begins to level off for longer distances. This pattern occurs because short flights spend a larger portion of their total time taking off and landing, when the plane is moving more slowly. In contrast, longer flights spend more time at cruising altitude, where planes travel at higher and relatively constant speeds. As a result, the average speed increases with distance until it approaches the typical cruising speed of the aircraft.
+
+## Question 8:
+
+Use the data set called “airquality” by using the command data("airquality")
+
+```{r}
+data('airquality')
+```
+
+Using this dataset, create a scatterplot of average monthly temperature (y-axis) by month (x-axis), where the points are colored by the amount of average monthly Ozone.
+
+```{r}
+airquality |> 
+  group_by(Month) |> 
+  summarize(avg_monthly_temp = mean(Temp, na.rm = T),
+            avg_monthly_ozone = mean(Ozone, na.rm = T)) |> 
+  ggplot(aes(x = Month, 
+            y = avg_monthly_temp, 
+            color = avg_monthly_ozone)) +
+  geom_point(size = 5) + 
+  labs(
+    title = 'Avg Monthly Temp by Month',
+    x = 'Month',
+    y = 'Avg Monthly Temp (F)',
+    color = 'Avg Monthly Ozone'
+  )
+```
