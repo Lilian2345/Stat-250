@@ -1,0 +1,161 @@
+---
+title: "Project 2"
+format: pdf
+editor: visual
+---
+
+###### Group: Lily Walker, Taige Zimmerman
+
+## Explanation of the Experiment
+
+This study examines both the accuracy and consistency of human time perception using a simple behavioral task. Participants were asked to silently count to 10 seconds and say “STOP” when they believed the 10 second interval had passed, while a partner recorded the actual elapsed time with a stopwatch.
+
+The design allows us to isolate the effect of observation. Within each pair, one participant completed the task first while the other observed. The roles were then reversed, so the second participant made their estimate after seeing an initial attempt. This creates a natural comparison between individuals who completed the task without prior exposure and those who had the benefit of a “trial run.”
+
+## Research Questions
+
+The analysis seeks to answer two primary questions regarding the effect of going second in the experiment:
+
+1.  Does observing a partner’s attempt shift the average time estimate? In other words, does it move the second group closer to the 10-second target?
+
+2.  Does observing a partner’s attempt affect the consistency of estimates? Specifically, does it reduce the spread, or standard deviation, within the group?
+
+To answer these questions, we define the control group as the participants who went first and the treatment group as the participants who went second. We use permutation tests, which reshuffle the data, to assess whether any observed differences in means or standard deviations are statistically significant or whether they are simply due to random variation.
+
+## Permutation Test 1: Difference in Means
+
+```{r}
+#| echo: false
+# Control (Went First)
+y1 <- c(
+11.11, 9.85, 8.86, 8.65, 9.95, 12.51, 10.5, 10.67, 12.6,
+11.21, 8.4, 12.58, 10.46, 12.54, 9.53, 9.96, 8.39, 8.91,
+9.01, 8.56, 12.09, 10.35
+)
+
+# Treatment (Went Second)
+y2 <- c(
+8.16, 10.06, 12.02, 11.42, 10.45, 10.48, 9.53, 9.6, 11.38,
+9.56, 10.63, 10.03, 11.33, 10.54, 8.96, 11.59, 11.03,
+10.15, 11.71, 11.41, 9.14, 10.13
+)
+
+# Here's my super slay function
+permutation_test <- function(y1, y2, B, alpha){
+  obs_t_stat <- mean(y1) - mean(y2)
+  ycomb <- c(y1, y2)
+  
+  perm_t_stats <- rep(NA, B)
+  for(i in 1:B){
+    shuffled <- sample(ycomb)
+    y1_perm <- shuffled[1 : length(y1)]
+    y2_perm <- shuffled[(length(y1) + 1) : length(ycomb)]
+    perm_t_stats[i] <- mean(y1_perm) - mean(y2_perm)
+  }
+  
+  p_val <- sum(abs(perm_t_stats) >= abs(obs_t_stat)) / B
+  
+  if(p_val <= alpha){
+    outcome <- 'reject'
+  } else{
+    outcome <- 'fail to reject'
+  }
+  
+  list(
+    perm_t_stats,
+    p_val,
+    outcome
+  )
+}
+
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+library(tidyverse)
+results <- permutation_test(y1, y2, 10000, 0.05)
+perm_data <- data.frame(perm_t_stats = results[[1]])
+
+perm_data |> 
+  ggplot(aes(x = perm_t_stats)) +
+    geom_histogram(fill = 'blue4') + 
+    geom_vline(xintercept = mean(y1) - mean(y2), color = 'red', linewidth = 1) +
+    labs(title = "Permutation Distribution of Mean Differences",
+           x = "Difference in Means",
+           y = "Frequency")
+```
+
+```{r}
+#| echo: false
+p_val <- results[[2]]
+paste("p_val:", p_val)
+```
+
+Conclusion: With a p-value of approximately `r p_val`, we fail to reject the null hypothesis at the $\alpha = 0.05$ significance level. This means that there is no significant evidence to suggest that the average time estimate differs between those who went first (control) and those who went second (treatment). This suggests that simply observing a partner perform the task does not necessarily make a person more accurate or biased in their own average 10-second estimate.
+
+## Permutation Test 2: Difference in Standard Deviations
+
+```{r}
+#| echo: false
+# Here's my other super slay function
+permutation_test_sd <- function(y1, y2, B, alpha){
+  obs_t_stat <- sd(y1) - sd(y2)
+  ycomb <- c(y1, y2)
+  
+  perm_t_stats <- rep(NA, B)
+  for(i in 1:B){
+    shuffled <- sample(ycomb)
+    y1_perm <- shuffled[1 : length(y1)]
+    y2_perm <- shuffled[(length(y1) + 1) : length(ycomb)]
+    perm_t_stats[i] <- sd(y1_perm) - sd(y2_perm)
+  }
+  
+  p_val <- sum(abs(perm_t_stats) >= abs(obs_t_stat)) / B
+  
+  if(p_val <= alpha){
+    outcome <- 'reject'
+  } else{
+    outcome <- 'fail to reject'
+  }
+  
+  list(
+    perm_t_stats,
+    p_val,
+    outcome
+  )
+}
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+results_sd <- permutation_test_sd(y1, y2, 10000, 0.05)
+perm_data_sd <- data.frame(perm_t_stats = results_sd[[1]])
+
+perm_data_sd |> 
+  ggplot(aes(x = perm_t_stats)) +
+    geom_histogram(fill = 'purple4') + 
+    geom_vline(xintercept = sd(y1) - sd(y2), color = 'red', linewidth = 1) +
+    labs(title = "Permutation Distribution of SD Differences",
+         x = "Difference in Standard Deviations",
+         y = "Frequency")
+```
+
+```{r}
+#| echo: false
+p_val_sd <- results_sd[[2]]
+paste("p_val:", p_val_sd)
+```
+
+Conclusion: With a p-value of approximately `r p_val_sd`, we reject the null hypothesis at the $\alpha = 0.05$ significance level. This means that while the average estimates were similar, the variability in those estimates appears to differ. Specifically, the group that went second (sd = `r sd(y2)`) showed higher consistency in their timing compared to the first group (sd = `r sd(y1)`). This suggests that while prior observation doesn't change the average guess, it may influence how much individual guesses spread out or cluster together.
+
+## Discussion of the Results
+
+Taken together, the two permutation tests provide a clearer picture of how prior observation influences time perception. Looking only at differences in means suggests little to no effect, but examining variability reveals a more subtle pattern.
+
+The groups do not differ meaningfully in their average estimates. The permutation test for means yields a high p-value, indicating that going second does not systematically move estimates closer to or further from the 10-second target. In contrast, the variability differs across groups. The permutation test for standard deviations is statistically significant, with the treatment group (those who went second) exhibiting a lower standard deviation than the control group.
+
+This pattern suggests that going second affects consistency rather than accuracy. Observing a partner’s attempt appears to provide a behavioral reference point. Even if the initial estimate is imperfect, it offers a basis for adjustment, allowing the second participant to better calibrate their internal sense of time. As a result, estimates become more tightly clustered. In other words, prior exposure reduces dispersion in responses without producing a corresponding shift in the mean.
